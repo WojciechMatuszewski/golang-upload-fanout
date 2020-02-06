@@ -1,0 +1,12 @@
+Resources:
+    ImagesDBTable:
+        Type: AWS::DynamoDB::Table
+        Properties:
+            TableName: ${self:custom.ImagesTableName}
+            AttributeDefinitions:
+                - AttributeName: imageID
+                  AttributeType: S
+            KeySchema:
+                - AttributeName: imageID
+                  KeyType: HASH
+            BillingMode: PAY_PER_REQUEST

@@ -1,0 +1,11 @@
+Resources:
+    ImageSnsTopic:
+        Type: AWS::SNS::Topic
+        Properties:
+            DisplayName: ${self:custom.FanOutSNSTopicName}
+            TopicName: ${self:custom.FanOutSNSTopicName}
+            Subscription:
+                - Endpoint: !GetAtt [ThumbnailQueue, Arn]
+                  Protocol: sqs
+                - Endpoint: !GetAtt [LowResQueue, Arn]
+                  Protocol: sqs

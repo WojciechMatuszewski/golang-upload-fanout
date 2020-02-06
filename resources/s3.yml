@@ -1,0 +1,24 @@
+Resources:
+    ImagesBucket:
+        Type: AWS::S3::Bucket
+        Properties:
+            BucketName: ${self:custom.ImagesBucketName}
+            CorsConfiguration:
+                CorsRules:
+                    - AllowedMethods:
+                          - GET
+                          - PUT
+                          - POST
+                          - HEAD
+                      AllowedOrigins:
+                          - "*"
+                      AllowedHeaders:
+                          - "*"
+
+Outputs:
+    ImagesBucketName:
+        Value:
+            !Ref ImagesBucket
+    ImagesBucketURL:
+        Value:
+            !Join ["", ["https://", !GetAtt [ImagesBucket, DomainName]]]

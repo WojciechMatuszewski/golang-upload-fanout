@@ -1,0 +1,97 @@
+service: golang-learning-v21
+
+plugins:
+    - serverless-apigw-binary
+    - serverless-go-plugin
+    - serverless-iam-roles-per-function
+
+provider:
+    name: aws
+    runtime: go1.x
+    region: eu-central-1
+    stage: ${opt:stage, 'dev'}
+
+
+custom:
+    apigwBinary:
+        types:
+            - "multipart~1form-data"
+    serverless-iam-roles-per-function:
+        defaultInherit: true
+    stage: ${opt:stage, self:provider.stage}
+    ImagesTableName: ${self:service}-${self:custom.stage}-imagestable
+    ImagesBucketName: ${self:service}-${self:custom.stage}-imagesbucket
+    FanOutSNSTopicName: ${self:service}-${self:custom.stage}-sns
+    SQSThumbnailQueueName: ${self:service}-${self:custom.stage}-thumbnail-queue
+    SQSLowResQueueName: ${self:service}-${self:custom.stage}-lowres-queue
+
+functions:
+    uploadLambda:
+        handler: ./functions/upload
+        environment:
+            IMAGES_BUCKET_NAME: ${self:service}-${self:custom.stage}-imagesbucket
+            SNS_TOPIC_ARN: !Ref ImageSnsTopic
+        iamRoleStatementsName: ${self:service}-${self:custom.stage}-upload-lambda-role
+        iamRoleStatements:
+            - Effect: "Allow"
+              Action:
+                  - s3:PutObject
+              Resource:
+                  - !GetAtt [ImagesBucket, Arn]
+                  - !Join ["", [!GetAtt [ImagesBucket, Arn], "*"]]
+            - Effect: "Allow"
+              Action:
+                  - sns:Publish
+              Resource:
+                  - !Ref ImageSnsTopic
+        events:
+            - http:
+                  method: POST
+                  path: /upload
+                  cors: true
+
+    createLowResImageLambda:
+        handler: ./functions/lowres
+        environment:
+            IMAGES_BUCKET_NAME: ${self:service}-${self:custom.stage}-imagesbucket
+        iamRoleStatementsName: ${self:service}-${self:custom.stage}-create-low-res-image-lambda-role
+        iamRoleStatements:
+            -   Effect: "Allow"
+                Action:
+                    - s3:GetObject
+                    - s3:PutObject
+                Resource:
+                    - !GetAtt [ImagesBucket, Arn]
+                    - !Join ["", [!GetAtt [ImagesBucket, Arn], "*"]]
+        events:
+            - sqs:
+                  arn: !GetAtt [LowResQueue, Arn]
+                  batchSize: 1
+
+    createThumbnailLambda:
+        handler: ./functions/thumbnail
+        environment:
+            IMAGES_BUCKET_NAME: ${self:service}-${self:custom.stage}-imagesbucket
+        iamRoleStatementsName: ${self:service}-${self:custom.stage}-create-thumbnail-lambda-role
+        iamRoleStatements:
+            -   Effect: "Allow"
+                Action:
+                    - s3:GetObject
+                    - s3:PutObject
+                Resource:
+                    - !GetAtt [ImagesBucket, Arn]
+                    - !Join ["", [!GetAtt [ImagesBucket, Arn], "*"]]
+        events:
+            - sqs:
+                  arn: !GetAtt [ThumbnailQueue, Arn]
+                  batchSize: 1
+
+
+
+resources:
+    - ${file(resources/s3.yml)}
+    - ${file(resources/dynamo.yml)}
+    - ${file(resources/sqs.yml)}
+    - ${file(resources/sns.yml)}
+    - ${file(resources/policies.yml)}
+

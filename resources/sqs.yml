@@ -1,0 +1,10 @@
+Resources:
+    ThumbnailQueue:
+        Type: AWS::SQS::Queue
+        Properties:
+            QueueName: ${self:custom.SQSThumbnailQueueName}
+
+    LowResQueue:
+        Type: AWS::SQS::Queue
+        Properties:
+            QueueName: ${self:custom.SQSLowResQueueName}

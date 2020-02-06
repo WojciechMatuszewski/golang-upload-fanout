@@ -1,0 +1,38 @@
+Resources:
+    SQSAllowSNSPolicy:
+        Type: AWS::SQS::QueuePolicy
+        Properties:
+            PolicyDocument:
+                Version: "2012-10-17"
+                Statement:
+                    - Sid: allow-sns-messages
+                      Effect: "Allow"
+                      # this should be more specific
+                      # https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements_principal.html
+                      Principal: "*"
+                      Resource:
+                          - !GetAtt [ThumbnailQueue, Arn]
+                      Action:
+                          - SQS:SendMessage
+                          - SQS:GetQueueUrl
+            Queues:
+                - !Ref ThumbnailQueue
+
+    SQSAllowSNSPolicySecond:
+        Type: AWS::SQS::QueuePolicy
+        Properties:
+            PolicyDocument:
+                Version: "2012-10-17"
+                Statement:
+                    - Sid: allow-sns-messages
+                      Effect: "Allow"
+                        # this should be more specific
+                        # https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements_principal.html
+                      Principal: "*"
+                      Resource:
+                          - !GetAtt [LowResQueue, Arn]
+                      Action:
+                          - SQS:SendMessage
+                          - SQS:GetQueueUrl
+            Queues:
+                - !Ref LowResQueue
